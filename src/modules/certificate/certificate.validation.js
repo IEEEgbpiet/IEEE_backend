@@ -4,7 +4,7 @@ const VALID_POSITIONS = ["1st", "2nd", "3rd"];
 const validateCertificateFields = (req, res, next) => {
   const { name, email, event, branch, date, position } = req.body;
 
-  // ── Required fields ──────────────────────────────────────────────────────
+  // ── Required   fields ──────────────────────────────────────────────────────
   if (!name || !email || !event || !branch || !date) {
     return res.status(400).json({
       success: false,
