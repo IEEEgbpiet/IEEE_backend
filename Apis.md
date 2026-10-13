@@ -7,10 +7,10 @@ Comprehensive API documentation for the **IEEE GBPIET Student Branch Backend**.
 ## 📊 Summary of APIs
 
 ### 1. Global Metrics
-- **Total APIs Count**: `34`
-- **Total Modules**: `9`
-- **Protected APIs (Require JWT Auth)**: `17`
-- **Public APIs**: `17`
+- **Total APIs Count**: `38`
+- **Total Modules**: `10`
+- **Protected APIs (Require JWT Auth)**: `20`
+- **Public APIs**: `18`
 
 ### 2. Module-wise Breakdown
 
@@ -25,7 +25,8 @@ Comprehensive API documentation for the **IEEE GBPIET Student Branch Backend**.
 | **Dashboard Analytics** | `/api/v1/dashboard` | 4 | 0 | 4 |
 | **Registration** | `/api/v1/registration` | 3 | 3 | 0 |
 | **Student Directory** | `/api/v1/directory` | 1 | 1 | 0 |
-| **Total** | | **34** | **17** | **17** |
+| **Announcements** | `/api/v1/announcement` | 4 | 1 | 3 |
+| **Total** | | **38** | **18** | **20** |
 
 ---
 
@@ -67,6 +68,10 @@ Comprehensive API documentation for the **IEEE GBPIET Student Branch Backend**.
 | 32 | Registration | `GET` | `/api/v1/registration/getInfo/:registrationId` | No | None | Retrieves registration details by 7-digit `registrationId` |
 | 33 | Registration | `GET` | `/api/v1/registration/getAll` | No | None | Retrieves all event registrations sorted by newest first |
 | 34 | Student Directory | `GET` | `/api/v1/directory/getAll` | No | None | Retrieves all student directory records sorted alphabetically by name |
+| 35 | Announcement | `POST` | `/api/v1/announcement/Createnew` | **Yes (Bearer)** | `multipart/form-data` | Creates announcement with optional title, description & image (at least one required) |
+| 36 | Announcement | `GET` | `/api/v1/announcement/getAll` | No | None | Retrieves all announcements sorted by newest first |
+| 37 | Announcement | `PATCH` | `/api/v1/announcement/edit/:id` | **Yes (Bearer)** | `multipart/form-data` | Updates announcement fields & replaces old Cloudinary image |
+| 38 | Announcement | `DELETE` | `/api/v1/announcement/delete/:id` | **Yes (Bearer)** | None | Deletes announcement & removes Cloudinary image |
 
 ---
 
@@ -1361,5 +1366,176 @@ Retrieves a complete list of all student directory profiles, sorted in ascending
   - `gender` *(string, optional)*: Gender identifier (`MALE`, `FEMALE`, or `OTHER`).
   - `createdAt` *(ISO 8601 string)*: Timestamp when the directory entry was created.
   - `updatedAt` *(ISO 8601 string)*: Timestamp when the directory entry was last updated.
+
+---
+
+### 10. Announcement Module (`/api/v1/announcement`)
+
+Manages general-purpose announcements for the IEEE student branch. Supports flexible content — frontend can send any combination of `title`, `description`, and `image`, but must provide **at least one** field.
+
+#### `POST /api/v1/announcement/Createnew`
+Creates a new announcement with optional Cloudinary image upload. At least one of `title`, `description`, or `image` must be provided.
+
+- **Authentication**: **Required (`verifyToken`)**
+- **Headers**:
+  - `Authorization: Bearer <token>`
+  - `Content-Type: multipart/form-data`
+- **FormData Fields**:
+  - `title` *(string, optional)*: Announcement headline
+  - `description` *(string, optional)*: Announcement body/description
+  - `image` *(file, optional)*: Image file (`jpg`, `jpeg`, `png`, `webp`, max 5MB)
+- **Validation**: At least one of `title`, `description`, or `image` must be provided.
+- **Response (201 Created)**:
+```json
+{
+  "success": true,
+  "message": "Announcement created successfully",
+  "data": {
+    "_id": "6ace117c1cff29b2e59f9023",
+    "AnnouncementId": "ANN6387949797",
+    "title": "Workshop 2026",
+    "description": "Annual IEEE workshop coming soon!",
+    "image": {
+      "url": "https://res.cloudinary.com/ieee-gbpiet/image/upload/v1727280000/ieee-announcements/banner1.png",
+      "publicId": "ieee-announcements/banner1"
+    },
+    "createdAt": "2026-10-13T11:09:48.990Z",
+    "updatedAt": "2026-10-13T11:09:48.990Z"
+  }
+}
+```
+- **Response (400 Bad Request)** *(no fields provided)*:
+```json
+{
+  "success": false,
+  "message": "Provide at least one field: title, description, or image"
+}
+```
+- **Response (401 Unauthorized)**:
+```json
+{
+  "success": false,
+  "message": "Access denied. No token provided."
+}
+```
+
+---
+
+#### `GET /api/v1/announcement/getAll`
+Retrieves all announcements sorted in reverse chronological order (`createdAt: -1`).
+
+- **Authentication**: None (Public)
+- **Headers**: None
+- **Response (200 OK)**:
+```json
+{
+  "success": true,
+  "count": 2,
+  "data": [
+    {
+      "_id": "6ace11851cff29b2e59f9024",
+      "AnnouncementId": "ANN8088195239",
+      "title": "Workshop 2026",
+      "description": "Annual IEEE workshop coming soon!",
+      "image": {
+        "url": "https://res.cloudinary.com/...",
+        "publicId": "ieee-announcements/..."
+      },
+      "createdAt": "2026-10-13T11:09:57.503Z",
+      "updatedAt": "2026-10-13T11:09:57.503Z"
+    },
+    {
+      "_id": "6ace117c1cff29b2e59f9023",
+      "AnnouncementId": "ANN6387949797",
+      "title": "Test Announcement",
+      "image": {
+        "url": "",
+        "publicId": ""
+      },
+      "createdAt": "2026-10-13T11:09:48.990Z",
+      "updatedAt": "2026-10-13T11:09:48.990Z"
+    }
+  ]
+}
+```
+
+---
+
+#### `PATCH /api/v1/announcement/edit/:id`
+Updates an existing announcement by `AnnouncementId` or MongoDB `_id`. Supports partial updates — at least one field must be provided. If a new image is uploaded, the previous Cloudinary asset is automatically destroyed.
+
+- **Authentication**: **Required (`verifyToken`)**
+- **Headers**:
+  - `Authorization: Bearer <token>`
+  - `Content-Type: multipart/form-data` or `application/json`
+- **URL Parameters**: `:id` (`AnnouncementId` e.g. `ANN6387949797` or MongoDB `_id`)
+- **FormData / JSON Body**: Any subset of fields (`title`, `description`, `image`)
+- **Validation**: At least one of `title`, `description`, or `image` must be provided.
+- **Response (200 OK)**:
+```json
+{
+  "success": true,
+  "message": "Announcement updated successfully",
+  "data": {
+    "_id": "6ace117c1cff29b2e59f9023",
+    "AnnouncementId": "ANN6387949797",
+    "title": "Updated Announcement Title",
+    "description": "Updated description text",
+    "image": {
+      "url": "https://res.cloudinary.com/...",
+      "publicId": "ieee-announcements/..."
+    },
+    "createdAt": "2026-10-13T11:09:48.990Z",
+    "updatedAt": "2026-10-13T11:10:30.933Z"
+  }
+}
+```
+- **Response (400 Bad Request)** *(no fields provided)*:
+```json
+{
+  "success": false,
+  "message": "Provide at least one field to update: title, description, or image"
+}
+```
+- **Response (404 Not Found)**:
+```json
+{
+  "success": false,
+  "message": "Announcement not found"
+}
+```
+
+---
+
+#### `DELETE /api/v1/announcement/delete/:id`
+Deletes an announcement by `AnnouncementId` or MongoDB `_id`. Automatically destroys the associated Cloudinary image asset before removing the MongoDB document.
+
+- **Authentication**: **Required (`verifyToken`)**
+- **Headers**: `Authorization: Bearer <token>`
+- **URL Parameters**: `:id` (`AnnouncementId` e.g. `ANN6387949797` or MongoDB `_id`)
+- **Response (200 OK)**:
+```json
+{
+  "success": true,
+  "message": "Announcement deleted successfully",
+  "data": {
+    "_id": "6ace117c1cff29b2e59f9023",
+    "AnnouncementId": "ANN6387949797",
+    "title": "Workshop 2026",
+    "description": "Annual IEEE workshop coming soon!",
+    "image": {
+      "url": "",
+      "publicId": ""
+    }
+  }
+}
+```
+- **Response (404 Not Found)**:
+```json
+{
+  "success": false,
+  "message": "Announcement not found"
+}
+```
 
 

@@ -11,7 +11,7 @@ import SupportRouter from "./src/modules/Support/support.router.js"
 import DashBoardRouter from "./src/modules/dashboard/dash.router.js"
 import RegisterRouter from "./src/modules/Registration/register.router.js"
 import Directory from "./src/modules/Directory/dir.router.js";
-
+import announcement from "./src/modules/announcement/router.js"
 const app = express();
 
 // Middleware
@@ -37,6 +37,7 @@ app.use("/api/v1/support", SupportRouter);
 app.use("/api/v1/dashboard", DashBoardRouter);
 app.use("/api/v1/registration" , RegisterRouter);
 app.use("/api/v1/directory", Directory);
+app.use("/api/v1/announcement", announcement);
 
 
 // Port

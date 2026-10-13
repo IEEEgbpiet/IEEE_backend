@@ -1,6 +1,6 @@
 # IEEE GBPIET Student Branch Backend
 
-> **Automated Certificate Generation, Event Management, Department Reporting, Support Ticketing & Admin Analytics System**
+> **Automated Certificate Generation, Event Management, Department Reporting, Announcements, Support Ticketing & Admin Analytics System**
 
 ---
 
@@ -8,7 +8,7 @@
 
 The **IEEE GBPIET Backend** is a modular RESTful API built on **Node.js (Express 5)** and **MongoDB (Mongoose)** designed to power the official web platform of the **IEEE Student Branch at Govind Ballabh Pant Institute of Engineering & Technology (GBPIET)**.
 
-It provides automated digital certificate generation and email dispatching, media uploads for departmental posts and upcoming events, ticket-based public inquiry management, and real-time analytical dashboard reporting for administrators.
+It provides automated digital certificate generation and email dispatching, media uploads for departmental posts and upcoming events, general-purpose announcements with flexible content, ticket-based public inquiry management, and real-time analytical dashboard reporting for administrators.
 
 ---
 
@@ -42,6 +42,11 @@ It provides automated digital certificate generation and email dispatching, medi
   - Admin management for reviewing, rejecting, or closing/solving tickets.
 - **Analytics & Admin Dashboard**:
   - Aggregated metrics across department publications, recent events, support resolution status, and certificate issuance statistics.
+- **Announcements Management**:
+  - Flexible content creation — supports any combination of title, description, and image (at least one required).
+  - Cloudinary image upload with automatic cleanup on update or deletion.
+  - Auto-generated unique announcement IDs (e.g. `ANN6387949797`).
+  - Dual ID lookup — fetch, edit, or delete by `AnnouncementId` or MongoDB `_id`.
 
 ---
 
@@ -83,6 +88,7 @@ IEEE_backend/
 │   │   ├── certificate.js           # Certificate application & issuance schema
 │   │   ├── contactUs.js             # Support tickets schema
 │   │   ├── passwordReset.js         # OTP password reset schema (TTL indexed)
+│   │   ├── annoucement.js           # Announcement schema
 │   │   ├── upcomingEvents.js        # Upcoming events schema
 │   │   └── user.js                  # Admin user credentials schema
 │   ├── modules/                     # Feature modules (Route -> Controller -> Services)
@@ -91,6 +97,7 @@ IEEE_backend/
 │   │   ├── UpcomingEvent/           # Upcoming events publishing
 │   │   ├── auth/                    # Admin login, logout & OTP password recovery
 │   │   ├── certificate/             # Certificate application, review & generation
+│   │   ├── announcement/            # Announcements publishing & management
 │   │   ├── dashboard/               # Aggregated administrative analytics
 │   │   └── department/              # Department activities and report logs
 │   ├── templates/                   # Dynamic HTML templates
@@ -106,6 +113,7 @@ IEEE_backend/
 │       ├── generateCertificatePDF.js# Puppeteer PDF rendering engine
 │       ├── jwt.sign.js              # JWT creation helper
 │       ├── jwt.verify.js            # JWT verification helper
+│       ├── AnnoucementIDgenerator.js# Announcement ID generator (ANN prefix)
 │       └── sendCertificateEmail.js  # Resend email attachment dispatcher
 ```
 
@@ -237,6 +245,17 @@ Tracks participant and team registrations for IEEE events.
   - `branch` *(String, required, trim)*: Engineering branch / department.
 - `timestamps`: `createdAt`, `updatedAt`.
 
+### 8. `Announcement` (`src/models/annoucement.js`)
+Manages general-purpose announcements with flexible content.
+- `AnnouncementId` *(String, required, unique, trim)*: Auto-generated unique ID (e.g. `ANN6387949797`).
+- `title` *(String, trim)*: Announcement headline (optional).
+- `description` *(String, trim)*: Announcement body text (optional).
+- `image` *(Object)*:
+  - `url` *(String)*: Cloudinary secure URL.
+  - `publicId` *(String)*: Cloudinary asset ID.
+- `timestamps`: `createdAt`, `updatedAt`.
+- **Note**: At least one of `title`, `description`, or `image` must be provided when creating or updating.
+
 ---
 
 ## ⚙️ Environment Variables
@@ -277,7 +296,9 @@ cp .env.example .env
 | **Support** | `/api/v1/support` | 5 | Public inquiry submission & admin ticket management (close/reject/view) |
 | **Dashboard** | `/api/v1/dashboard` | 4 | Aggregated admin analytics for departments, events, tickets & certificates |
 | **Registration** | `/api/v1/registration` | 3 | Individual & team event registration, retrieval by ID, and list all registrations |
-| **Total** | | **33** | |
+| **Announcements**| `/api/v1/announcement` | 4 | CRUD operations for announcements with optional Cloudinary image upload |
+| **Student Directory** | `/api/v1/directory` | 1 | Retrieves all student directory records sorted alphabetically |
+| **Total** | | **38** | |
 
 ---
 
