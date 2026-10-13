@@ -5,6 +5,7 @@ import {
   viewPost,
   editPost,
   deletePost,
+  toggleVisibility,
 } from "./dep.controller.js";
 import verifyToken from "../../middleware/auth.middleware.js";
 import { uploadSingleImage } from "../../config/multer.js";
@@ -15,6 +16,7 @@ router.post("/create", verifyToken, uploadSingleImage("image"), createPost);
 router.get("/all", allPost);
 router.delete("/delete/:id", verifyToken, deletePost);
 router.patch("/edit/:id", verifyToken, uploadSingleImage("image"), editPost);
+router.patch("/visibility/:id", verifyToken, toggleVisibility);
 router.get("/post/:id", viewPost);
 
 export default router;

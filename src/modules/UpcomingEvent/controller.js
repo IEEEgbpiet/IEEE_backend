@@ -3,6 +3,7 @@ import { deletePostService } from "./services/deletePost.service.js";
 import { editPostService } from "./services/EditPost.service.js";
 import { getAllPostsService } from "./services/getAllPosts.service.js";
 import { viewPostService } from "./services/ViewPost.service.js";
+import { toggleVisibilityService } from "./services/toggleVisibility.service.js";
 
 const createPost = async (req, res) => {
   try {
@@ -36,7 +37,9 @@ const createPost = async (req, res) => {
 
 const allPost = async (req, res) => {
   try {
-    const posts = await getAllPostsService();
+    const { admin } = req.query;
+
+    const posts = await getAllPostsService(admin);
 
     return res.status(200).json({
       success: true,
@@ -129,4 +132,34 @@ const deletePost = async (req, res) => {
   }
 };
 
-export { createPost, allPost, viewPost, editPost, deletePost };
+const toggleVisibility = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { visibilityStatus } = req.body;
+
+    if (typeof visibilityStatus !== "boolean") {
+      return res.status(400).json({
+        success: false,
+        message: "visibilityStatus must be a boolean",
+      });
+    }
+
+    const post = await toggleVisibilityService(id, visibilityStatus);
+
+    return res.status(200).json({
+      success: true,
+      message: `Event visibility set to ${visibilityStatus ? "online" : "offline"}`,
+      post,
+    });
+  } catch (error) {
+    console.error("Toggle event visibility error:", error);
+    const statusCode = error.message === "Event not found" ? 404 : 500;
+
+    return res.status(statusCode).json({
+      success: false,
+      message: error.message || "Failed to toggle event visibility",
+    });
+  }
+};
+
+export { createPost, allPost, viewPost, editPost, deletePost, toggleVisibility };
