@@ -50,6 +50,11 @@ const UpcomingeventSchema = new mongoose.Schema(
         trim: true,
       },
     },
+
+    visibilityStatus: {
+      type: Boolean,
+      default: true,
+    },
   },
   {
     timestamps: true,
