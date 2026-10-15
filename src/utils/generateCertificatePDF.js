@@ -2,15 +2,25 @@ import puppeteer from "puppeteer-core";
 import chromium from "@sparticuz/chromium";
 
 /**
- * Launches Puppeteer, renders the provided HTML string, and returns a PDF Buffer.
- * Supports both production (Render / Linux using @sparticuz/chromium) and local development (Windows / Mac).
- * @param {string} html - Fully rendered certificate HTML string.
- * @returns {Promise<Buffer>} - PDF as a Node.js Buffer.
+ * Cached browser promise to reuse a single Chromium instance across PDF requests.
+ * Spawning a new Chromium process on every request takes 3-6+ seconds;
+ * reusing a warm instance drops per-certificate render time to <1 second.
  */
-const generateCertificatePDF = async (html) => {
-  let browser;
+let cachedBrowserPromise = null;
 
-  try {
+const getBrowser = async () => {
+  if (cachedBrowserPromise) {
+    try {
+      const browser = await cachedBrowserPromise;
+      if (browser && browser.isConnected()) {
+        return browser;
+      }
+    } catch {
+      cachedBrowserPromise = null;
+    }
+  }
+
+  cachedBrowserPromise = (async () => {
     let executablePath;
     let args;
     let defaultViewport = chromium.defaultViewport;
@@ -23,6 +33,7 @@ const generateCertificatePDF = async (html) => {
         "--no-sandbox",
         "--disable-setuid-sandbox",
         "--disable-dev-shm-usage",
+        "--disable-gpu",
       ];
     } else if (process.platform === "linux") {
       // Production Linux / Render environment
@@ -34,6 +45,7 @@ const generateCertificatePDF = async (html) => {
         "--disable-dev-shm-usage",
         "--no-zygote",
         "--single-process",
+        "--disable-gpu",
       ];
     } else {
       // Local development (Windows / macOS)
@@ -43,23 +55,56 @@ const generateCertificatePDF = async (html) => {
         "--no-sandbox",
         "--disable-setuid-sandbox",
         "--disable-dev-shm-usage",
+        "--disable-gpu",
       ];
       defaultViewport = null;
       headless = true;
     }
 
-    browser = await puppeteer.launch({
+    const browser = await puppeteer.launch({
       executablePath,
       args,
       defaultViewport,
       headless,
     });
 
-    const page = await browser.newPage();
-
-    await page.setContent(html, {
-      waitUntil: "networkidle0",
+    browser.on("disconnected", () => {
+      cachedBrowserPromise = null;
     });
+
+    return browser;
+  })();
+
+  return cachedBrowserPromise;
+};
+
+/**
+ * Renders the provided HTML string into a PDF Buffer using a warm Puppeteer page.
+ * @param {string} html - Fully rendered certificate HTML string.
+ * @returns {Promise<Buffer>} - PDF as a Node.js Buffer.
+ */
+const generateCertificatePDF = async (html) => {
+  let browser;
+  try {
+    browser = await getBrowser();
+  } catch (err) {
+    cachedBrowserPromise = null;
+    browser = await getBrowser();
+  }
+
+  const page = await browser.newPage();
+
+  try {
+    // domcontentloaded is much faster than networkidle0 (which forces an arbitrary 500ms wait)
+    await page.setContent(html, {
+      waitUntil: "domcontentloaded",
+    });
+
+    // Ensure external web fonts (Syne, Abril Fatface) are fully parsed and ready before PDF capture
+    await Promise.race([
+      page.evaluateHandle("document.fonts.ready"),
+      new Promise((resolve) => setTimeout(resolve, 3000)),
+    ]);
 
     const pdfBuffer = await page.pdf({
       format: "A4",
@@ -76,10 +121,10 @@ const generateCertificatePDF = async (html) => {
 
     return Buffer.from(pdfBuffer);
   } finally {
-    if (browser) {
-      await browser.close();
-    }
+    // Close only the tab/page to release memory, keeping the browser process warm for subsequent requests
+    await page.close().catch(() => {});
   }
 };
 
 export default generateCertificatePDF;
+

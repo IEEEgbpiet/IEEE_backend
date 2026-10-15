@@ -107,14 +107,11 @@ const templateCertificate = ({
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Abril+Fatface&family=Syne:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <style>
       :root{
         --ink:#0f0a24; --teal:#5f9fa8; --rule:#5b97ad;
-        --body-font:"Syne","Segoe UI",Arial,sans-serif;
-        --title-font:"Abril Fatface","Playfair Display",Georgia,serif;
+        --body-font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+        --title-font:"Georgia","Palatino Linotype","Book Antiqua","Times New Roman",serif;
       }
       *{box-sizing:border-box;margin:0;padding:0}
       @page{size:962px 680px;margin:0}
