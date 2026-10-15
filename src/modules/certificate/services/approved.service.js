@@ -41,8 +41,7 @@ const approvedService = async (id) => {
       event: certificate.eventName,
       date: certificate.date,
       certificateId: certificate.certificateId,
-      issueDate,
-      logoUrl: process.env.CERTIFICATE_LOGO_URL || null,
+
     });
 
     pdfBuffer = await generateCertificatePDF(html);

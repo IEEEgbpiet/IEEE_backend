@@ -40,8 +40,6 @@ const adminApplyService = async ({
       event,
       date,
       certificateId,
-      issueDate,
-      logoUrl: process.env.CERTIFICATE_LOGO_URL || null,
       position,
     });
 

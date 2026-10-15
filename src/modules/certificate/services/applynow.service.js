@@ -11,7 +11,6 @@ const applyNowService = async ({ name, email, branch, event, date, position }) =
     branch,
     eventName: event,
     date,
-    position: position || null,
     certificateId,
     status: "pending",
   });
